@@ -1,8 +1,11 @@
 package com.example.community.entity.event;
 
 import com.alibaba.fastjson.JSONObject;
+import com.example.community.entity.DiscussPost;
 import com.example.community.entity.Event;
 import com.example.community.entity.Message;
+import com.example.community.service.DiscussPostService;
+import com.example.community.service.ElasticsearchService;
 import com.example.community.service.MessageService;
 import com.example.community.util.CommunityConstant;
 import lombok.experimental.Accessors;
@@ -25,6 +28,10 @@ public class EventConsumer implements CommunityConstant {
 
     @Autowired
     private MessageService messageService;
+    @Autowired
+    private DiscussPostService discussPostService;
+    @Autowired
+    private ElasticsearchService elasticsearchService;
 
 
 
@@ -66,5 +73,23 @@ public class EventConsumer implements CommunityConstant {
         message.setContent(JSONObject.toJSONString(content));
 
         messageService.addMessage(message);
+    }
+
+    // 消费发帖事件
+    @KafkaListener(topics = {TOPIC_PUBLISH})
+    public void handlePublishMessage(ConsumerRecord record) {
+        if (record == null) {
+            logger.error("消息格式错误！");
+            return;
+        }
+        Event event = JSONObject.parseObject(record.value().toString(), Event.class);
+        if (event == null) {
+            logger.error("消息格式错误！");
+            return;
+        }
+
+        DiscussPost discussPost = discussPostService.findDiscussPostById(event.getEntityId());
+
+        elasticsearchService.saveDiscussPost(discussPost);
     }
 }

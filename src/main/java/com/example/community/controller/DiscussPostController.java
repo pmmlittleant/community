@@ -1,9 +1,7 @@
 package com.example.community.controller;
 
-import com.example.community.entity.Comment;
-import com.example.community.entity.DiscussPost;
-import com.example.community.entity.Page;
-import com.example.community.entity.User;
+import com.example.community.entity.*;
+import com.example.community.entity.event.EventProducer;
 import com.example.community.service.CommentService;
 import com.example.community.service.DiscussPostService;
 import com.example.community.service.LikeService;
@@ -24,15 +22,18 @@ import java.util.*;
 @RequestMapping("/discuss")
 public class DiscussPostController implements CommunityConstant {
     @Autowired
-    DiscussPostService discussPostService;
+    private DiscussPostService discussPostService;
     @Autowired
-    HostHolder hostHolder;
+    private HostHolder hostHolder;
     @Autowired
-    UserService userService;
+    private UserService userService;
     @Autowired
-    CommentService commentService;
+    private CommentService commentService;
     @Autowired
-    LikeService likeService;
+    private LikeService likeService;
+
+    @Autowired
+    private EventProducer eventProducer;
 
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
@@ -50,6 +51,17 @@ public class DiscussPostController implements CommunityConstant {
         post.setContent(content);
         post.setCreateTime(new Date());
         discussPostService.addDiscussPost(post);
+
+        // 触发发帖事件
+        Event event = new Event();
+        event
+                .setTopic(TOPIC_PUBLISH)
+                .setUserId(user.getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(post.getId());
+
+        eventProducer.fireEvent(event);
+
 
         //报错的情况将来统一处理
         return CommunityUtil.getJSONString(0, "发布成功");
