@@ -22,4 +22,9 @@ public interface DiscussPostMapper {
      *  需要添加@Param注解为参数提供别名*/
     int selectDiscussPostRows(@Param("userId") int userId);
 
+    int insertDiscussPost(DiscussPost discussPost);
+
+    DiscussPost selectDiscussPost(int id);
+
+    int updateCommentCount(int id, int commentCount);
 }

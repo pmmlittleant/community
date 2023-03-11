@@ -1,6 +1,7 @@
 package com.example.community.controller;
 
 import com.example.community.service.AlphaService;
+import com.example.community.util.CommunityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Controller;
@@ -9,10 +10,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.security.PublicKey;
 import java.util.*;
 
 @Controller
@@ -137,4 +141,54 @@ public class AlphaController {
         list.add(emp2);
         return list;
     }
+
+    @RequestMapping(value = "/cookie/set", method = RequestMethod.GET)
+    @ResponseBody
+    public String setCookie(HttpServletResponse response) {
+        //创建Cookie:
+        Cookie cookie = new Cookie("code", CommunityUtil.genertateUUID());
+        //设置Cookie生效范围
+        cookie.setPath("/community/alpha");
+        //设置Cookie的生存时间（默认存在内存，浏览器关闭，清除cookie,设置时间后将保存在硬盘中）
+        cookie.setMaxAge(60 * 10);
+        //发送cookie
+        response.addCookie(cookie);
+        return "set cookie";
+    }
+
+
+    @RequestMapping(value = "/cookie/get", method = RequestMethod.GET)
+    @ResponseBody
+    public String setCookie(@CookieValue("code") String code) { //添加一个获得Cookie的注解，（cookie的key）
+        System.out.println(code);
+        return "get cookie";
+    }
+
+    //Session
+    @RequestMapping(value = "/session/set", method = RequestMethod.GET)
+    @ResponseBody
+    public String setSession(HttpSession session) { //session直接通过SpringMVC注入
+        session.setAttribute("id", 1);
+        session.setAttribute("name", "test");
+        return "set session";
+    }
+
+    @RequestMapping(value = "/session/get", method = RequestMethod.GET)
+    @ResponseBody
+    public String getSession(HttpSession session) {
+        System.out.println(session.getAttribute("id"));
+        System.out.println(session.getAttribute("name"));
+        return "set session";
+    }
+
+
+    // ajax示例
+    @RequestMapping(value = "/ajax", method = RequestMethod.POST)
+    @ResponseBody
+    public String testAjax(String name, int age) {
+        System.out.println(name);
+        System.out.println(age);
+        return CommunityUtil.getJSONString(0, "操作成功");
+    }
+
 }

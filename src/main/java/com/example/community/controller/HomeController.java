@@ -4,8 +4,10 @@ import com.example.community.entity.DiscussPost;
 import com.example.community.entity.Page;
 import com.example.community.entity.User;
 import com.example.community.service.DiscussPostService;
+import com.example.community.service.LikeService;
 import com.example.community.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.index.PathBasedRedisIndexDefinition;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +27,8 @@ public class HomeController {
 
     @Resource
     private UserService userService;
+    @Autowired
+    private LikeService likeService;
 
     @RequestMapping(value = "/index", method = RequestMethod.GET)
     public String getIndexPage(Model model, Page page) {
@@ -43,9 +47,16 @@ public class HomeController {
                 map.put("post", post);
                 map.put("user", user);
                 discussPosts.add(map);
+
+                map.put("likeCount",likeService.findEntityLikeCount(post.getType(), post.getId()));
             }
         }
         model.addAttribute("discussPosts", discussPosts);
         return "/index";
+    }
+
+    @RequestMapping(value = "/error", method = RequestMethod.GET)
+    public String getErrorPage() {
+        return "/error/500";
     }
 }

@@ -3,32 +3,111 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--namespace为对应的Mapper接口的包名-->
-<mapper namespace="com.example.community.dao.CommentMapper">
+<mapper namespace="com.example.community.dao.MessageMapper">
     <sql id="selectFields">
-        id, user_id, entity_type, entity_id, target_id, content, status, create_time
+        id, from_id, to_id, conversation_id, content, status, create_time
     </sql>
     <sql id="insertFields">
-        user_id, entity_type, entity_id, target_id, content, status, create_time
+        from_id, to_id, conversation_id, content, status, create_time
     </sql>
-
-    <select id="selectCommentByEntity" resultType="Comment">
+    <select id="selectConversations" resultType="Message">
         select <include refid="selectFields"></include>
-        from comment
-        where status = 0
-        and entity_type = #{entityType}
-        and entity_id = #{entityId}
-        order by create_time asc
+        from message
+        where id in (
+            select max(id) from message
+            where status != 2
+            and from_id != 1
+            and (from_id = #{userId} or to_id = #{userId})
+            group by conversation_id
+        )
+        order by id desc
         limit #{offset}, #{limit}
     </select>
-    <select id="selectCountByEntity" resultType="int">
+    <select id="selectConversationCount" resultType="int">
         select count(id)
-        from comment
-        where status = 0
-        and entity_type = #{entityType}
-        and entity_id = #{entityId}
+        from message where id in (
+            select max(id)
+            FROM message
+            where status != 2
+            and from_id != 1
+            and (from_id = #{userId} or to_id = #{userId})
+            group by conversation_id
+        )
     </select>
-    <insert id="insertComment" parameterType="comment" keyProperty="id">
-        insert into comment (<include refid="insertFields"></include>)
-        values(#{userId}, #{entityType},#{entityId}, #{targetId}, #{content}, #{status}, #{createTime})
+    <select id="selectLetters" resultType="Message">
+        select <include refid="selectFields"></include>
+        from message
+        where status != 2
+        and from_id != 1
+        and conversation_id = #{conversationId}
+        order by id desc
+        limit #{offset}, #{limit}
+    </select>
+    <select id="selectLetterCount" resultType="int">
+        select count(id)
+        from message
+        where conversation_id = #{conversationId}
+        and status != 2
+        and from_id != 1
+    </select>
+    <select id="selectLetterUnreadCount" resultType="int">
+        select count(id)
+        from message
+        where status = 0
+        and from_id != 1
+        and to_id = #{userId}
+        <if test="conversationId!=null">
+            and conversation_id = #{conversationId}
+        </if>
+    </select>
+    <insert id="insertMessage" parameterType="Message" keyProperty="id">
+        insert into message (<include refid="insertFields"></include>)
+        values(#{fromId}, #{toId}, #{conversationId}, #{content}, #{status}, #{createTime})
     </insert>
+    <update id="updateStatus">
+        update message set status = #{status}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+    <select id="selectLatestNotice" resultType="Message">
+        select <include refid="selectFields"></include>
+        from message
+        where id in (
+            select max(id) from message
+            where status != 2
+            and from_id = 1
+            and to_id = #{userId}
+            and conversation_id = #{topic}
+        )
+    </select>
+    <select id="selectNoticeCount" resultType="int">
+        select count(id)
+        from message
+        where status != 2
+        and from_id = 1
+        and to_id = #{userId}
+        and conversation_id = #{topic}
+    </select>
+    <select id="selectNoticeUnreadCount" resultType="int" >
+        select count(id)
+        from message
+        where status = 0
+        and from_id = 1
+        and to_id = #{userId}
+        <if test="topic!=null">
+            and conversation_id = #{topic}
+        </if>
+    </select>
+    <select id="selectNotices" resultType="Message">
+        select <include refid="selectFields"></include>
+        from message
+        where status != 2
+        and from_id = 1
+        and to_id = #{userId}
+        and conversation_id = #{topic}
+        order by create_time desc
+        limit #{offset}, #{limit}
+    </select>
 </mapper>

@@ -16,6 +16,7 @@ public class Page {
 
     //数据总数（用于计算总页数: 总数 / limit）
     private int rows;
+
     //查询路径（复用分页链接）
     private String path;
 
