@@ -5,6 +5,11 @@ import com.example.community.entity.User;
 import com.example.community.service.UserService;
 import com.example.community.util.CookieUtil;
 import com.example.community.util.HostHolder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
@@ -40,6 +45,11 @@ public class LoginTicketInterceptor implements HandlerInterceptor {
                 // 在多线程中隔离存放对象：ThreadLocal(set方法：获得当前线程，以当前线程为key获得当前线程的Map对象，将变量存入当前线程的map中）
 
                 hostHolder.setUser(user); //通过一个ThreadLocal的封装类将user存入当前请求的线程中，请求结束前都能访问到该user
+
+                // 构建用户认证的结果，并存入SecurityContext,以便于Security进行授权。
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                        user, user.getPassword(), userService.getAuthorities(user.getId()));
+                SecurityContextHolder.setContext(new SecurityContextImpl(authentication));
             }
         }
 
